@@ -1,4 +1,12 @@
 import yfinance as yf
+import pickle
+
+fn_cached_returns = 'cached_returns.pk'
+try:
+    with open(fn_cached_returns, 'rb') as fi:
+        cached_returns = pickle.load(fi)
+except:
+    cached_returns = {}
 
 # Example tickers for earlier years. Update this list with appropriate historical tickers.
 # Assume that these are the stocks to buy for a specific year.
@@ -26,6 +34,24 @@ sp500_tickers = {
     2003: ['TSCO', 'ODFL', 'BSX', 'CTSH', 'AMZN', 'TPR', 'NVR', 'NEM', 'CNC', 'HAL', 'BALL', 'TTWO', 'AOS', 'GRMN', 'ZBH', 'STE', 'HOLX', 'ROST', 'ROL', 'FCX'],  # Example tickers from 2002
     2004: ['AXON', 'DECK', 'AKAM', 'ALGN', 'WMB', 'NFLX', 'ON', 'AES', 'GLW', 'TRMB', 'LRCX', 'AMZN', 'JNPR', 'FCX', 'DHI', 'TYL', 'FFIV', 'LEN', 'AMD', 'HUM'],  # Example tickers from 2003
     2005: ['AXON', 'DECK', 'AKAM', 'ALGN', 'WMB', 'NFLX', 'ON', 'AES', 'GLW', 'TRMB', 'LRCX', 'AMZN', 'JNPR', 'FCX', 'DHI', 'TYL', 'FFIV', 'LEN', 'AMD', 'HUM'],  # Example tickers from 2004
+    ## I got these values from ChatGPT but they may not be accurate
+    2006: ['TSO', 'PTV', 'ROH', 'BDK', 'EOG', 'NRG', 'VLO', 'TTWO', 'NVDA', 'BHI', 'MOS', 'ATI', 'FLS', 'GMCR', 'MRO', 'DVN', 'APA', 'WLT', 'DNR', 'ESV'],
+    2007: ['ICE', 'CME', 'CROX', 'CHK', 'CSX', 'MTD', 'SPG', 'EOG', 'WLT', 'NOV', 'X', 'PHM', 'MHK', 'GOOG', 'MOS', 'DE', 'BDX', 'TMO', 'MA', 'RIG'],
+    2008: ['MOS', 'PCLN', 'CF', 'AGU', 'POT', 'GILD', 'MON', 'AAPL', 'CLF', 'SOHU', 'NOV', 'RIG', 'WFT', 'JOYG', 'FCX', 'WU', 'BMC', 'SCHN', 'FLIR', 'COST'],
+    2009: ['DLTR', 'WRK', 'VRTX', 'ODFL', 'AMGN', 'WMT', 'EW', 'ROST', 'HAS', 'AZO', 'WAB', 'AJG', 'NFLX', 'GILD', 'GIS', 'MCD', 'SHW', 'PHM', 'WRB', 'CHD'],
+    2010: ['F', 'MOT', 'AAPL', 'FCX', 'NVIDIA', 'VMW', 'NVDA', 'FFIV', 'TSCO', 'PCLN', 'COST', 'BA', 'SPG', 'TMO', 'DLTR', 'ROST', 'HD', 'CMG', 'MCD', 'TJX'],
+    2011: ['AIG', 'F', 'GM', 'GME', 'TSLA', 'BA', 'NVDA', 'AAPL', 'NFLX', 'AMZN', 'GOOGL', 'FB', 'MSFT', 'ROKU', 'SHOP', 'SQ', 'PYPL', 'ADBE', 'CRM', 'INTU'],
+    2012: ['CMG', 'AZO', 'ISRG', 'PCLN', 'TSO', 'GILD', 'VRTX', 'DLTR', 'ROST', 'ALXN', 'REGN', 'BIIB', 'LRCX', 'AMGN', 'TSLA', 'AAPL', 'NVDA', 'NFLX', 'GOOG', 'AMZN'],
+    2013: ['PCLN', 'GOOGL', 'FB', 'TSLA', 'NFLX', 'AAPL', 'AMZN', 'NVDA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO'],
+    2014: ['NFLX', 'PCLN', 'TSLA', 'GOOGL', 'FB', 'AAPL', 'AMZN', 'NVDA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO'],
+    2015: ['TSLA', 'NFLX', 'AAPL', 'AMZN', 'GOOGL', 'FB', 'NVDA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO', 'PCLN'],
+    2016: ['AMZN', 'NFLX', 'GOOGL', 'FB', 'AAPL', 'NVDA', 'TSLA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO', 'PCLN'],
+    2017: ['NVDA', 'AMD', 'MU', 'NFLX', 'AMZN', 'GOOGL', 'FB', 'AAPL', 'TSLA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO'],
+    2018: ['NVDA', 'MU', 'AMD', 'NFLX', 'AMZN', 'GOOGL', 'FB', 'AAPL', 'TSLA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO'],
+    2019: ['AMZN', 'NFLX', 'GOOGL', 'FB', 'AAPL', 'NVDA', 'TSLA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO', 'PCLN'],
+    2020: ['AAPL', 'MSFT', 'AMZN', 'GOOGL', 'FB', 'NFLX', 'NVDA', 'TSLA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO'],
+    2021: ['TSLA', 'NFLX', 'AMZN', 'AAPL', 'GOOGL', 'FB', 'NVDA', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO', 'PCLN'],
+    2022: ['TSLA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'FB', 'NFLX', 'BA', 'GILD', 'ISRG', 'REGN', 'BIIB', 'VRTX', 'ROST', 'CMG', 'LRCX', 'AMGN', 'TSO', 'AZO'],
 }
 
 ### STRATEGY: INVEST IN THE TOP 20 STOCKS OF THE PREVIOUS YEAR ###
@@ -62,7 +88,6 @@ def calculate_strategy_return(starty, endy):
     print(f"Total invested: ${total_invested:.2f}")
     print(f"Total return: ${portfolio_value - total_invested:.2f}")
     print(f"Final portfolio return multiplier: {portfolio_value / total_invested:.2f}")
-
     return stock_holdings
 
 # This might not be right, but if we trust the data at the top of the file
@@ -74,7 +99,18 @@ def get_top_20_stocks_prev_year(year):
 def update_portfolio(portfolio, calendar_year):
     print(f"{calendar_year} Starting portfolio: {portfolio}...")
     new_portfolio = portfolio.copy()
+    if calendar_year not in cached_returns:
+        cached_returns[calendar_year] = {}
     for stock, amount_invested in portfolio.items():
+        if stock in cached_returns[calendar_year].keys():
+            price_multiplier = cached_returns[calendar_year][stock]
+            if price_multiplier == 0:
+                print(f"Assuming stock is now worthless. Removing {stock} from the portfolio...")
+                print(f"Amount invested in {stock}: ${amount_invested:.2f} at beginning of year {calendar_year}.")
+                new_portfolio.pop(stock)
+                continue
+            new_portfolio[stock] = (amount_invested * price_multiplier)
+            continue
         try:
             print(f"Fetching data for {stock} in {calendar_year}...")
             data = yf.download(stock, start=f'{calendar_year}-01-01', end=f'{calendar_year}-12-31')
@@ -83,13 +119,15 @@ def update_portfolio(portfolio, calendar_year):
                 print(f"Assuming stock is now worthless. Removing {stock} from the portfolio...")
                 print(f"Amount invested in {stock}: ${amount_invested:.2f} at beginning of year {calendar_year}.")
                 new_portfolio.pop(stock)
+                cached_returns[calendar_year][stock] = 0
                 continue
             if not data.empty:
                 end_price = data['Adj Close'].iloc[-1]
                 start_price = data['Adj Close'].iloc[0]
                 price_multiplier = end_price / start_price
                 print(f"Price multiplier for {stock} in {calendar_year}: {price_multiplier}")
-                new_portfolio[stock] = (amount_invested / start_price) * end_price
+                new_portfolio[stock] = (amount_invested * price_multiplier)
+                cached_returns[calendar_year][stock] = price_multiplier
         except Exception as e:
             print(f"Error calculating value for {stock} in {calendar_year}: {e}")
     print(f"{calendar_year} Ending portfolio: {new_portfolio}")
@@ -118,16 +156,20 @@ def baseline_test(ticker, starty, endy):
     print(f"Final portfolio return multiplier: {portfolio_value / total_invested:.2f}")
     return stock_holdings
 
+# baseline_test("UNH", 1985, 2005) # 13150% value increase
 # baseline_test("^GSPC", 1985, 2005) # 285% value increase
 # baseline_test('SPY', 1993, 2005) # Does not exist until 93 - 179% return
 # baseline_test("^GSPC", 1993, 2005) # 161% cash increase
 # baseline_test('HRL', 1985, 2005) # 504% cash increase
-calculate_strategy_return(1985, 2005) # 1243% return
+# calculate_strategy_return(1985, 2005) # 1243% return
 # Total portfolio value at the end of 2004: $4970954.92
 # Total invested: $400000.00
 # Total return: $4570954.92
 
-# baseline_test('SPY', 1985, 2005)
-# baseline_test("^GSPC", 2005, 2020)
-# baseline_test('SPY', 2005, 2020)
+# calculate_strategy_return(2001, 2020)
+# baseline_test("^GSPC", 2001, 2020)
+baseline_test('TSLA', 2021, 2021)
+
+with open(fn_cached_returns, 'wb') as fi:
+    pickle.dump(cached_returns, fi)
 
