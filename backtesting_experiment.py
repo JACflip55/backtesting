@@ -11,8 +11,9 @@ except:
     cached_returns = {}
 
 ## Experiment configuration
-length_of_experiment = 29 # Number of years to run the experiment for -1
+length_of_experiment = 20 # Number of years to run the experiment for
 annual_investment_total = 20000 # Total amount to invest each year
+earliest_year_in_data = 1962 # Cannot get earlier data from statmuse. We can from yfinance though
 
 ### STRATEGY: INVEST IN THE TOP N STOCKS OF THE PREVIOUS YEAR ###
 # For year X buy the top N stocks from year X-1, investing $1000 in each stock
@@ -111,8 +112,27 @@ def baseline_test(ticker, starty, endy):
     print(f"Final portfolio return multiplier: {portfolio_value / total_invested:.2f}")
     return portfolio_value - total_invested, portfolio_value / total_invested
 
+def compound_interest_calculator(percentage, num_years, verbose=False):
+    portfolio_value = 0
+    total_invested = 0
+
+    for year in range(0, num_years):
+        portfolio_value += annual_investment_total
+        total_invested += annual_investment_total
+        if verbose:
+            print(f"Total portfolio value at the beginning of {year}: ${portfolio_value:.2f}")
+        portfolio_value *= (1 + percentage)
+        if verbose:
+            print(f"Total portfolio value at the end of {year}: ${portfolio_value:.2f}")
+        if verbose:
+            print(f"Total invested: ${total_invested:.2f}")
+            print(f"Total return: ${portfolio_value - total_invested:.2f}")
+    if verbose:
+      print(f"Final portfolio return multiplier: {portfolio_value / total_invested:.2f}")
+    return portfolio_value - total_invested, portfolio_value / total_invested
+
 def run_experiment():
-    periods = [(start, start + length_of_experiment) for start in range(1962, 2024 - length_of_experiment)]
+    periods = [(start, start + length_of_experiment - 1) for start in range(earliest_year_in_data, 2025 - length_of_experiment)]
     results = []
 
     for starty, endy in periods:
@@ -139,8 +159,21 @@ def print_experiment_results(results):
         print(f"Best performing portfolio: {best_portfolio[1]} with percentage increase of: %${best_portfolio[0]*100:.2f}")
         print("\n")
 
+def print_compound_interest_comparisons():
+    print("\n\n\n")
+    print("Compound Interest Comparisons:\n")
+    for i in range(12, 40):
+        percentage = 0.005 * i # increment by 1/2 percent
+        print(f"Compound interest at {percentage*100:.2f}% per year:")
+        return_15, multiplier_15 = compound_interest_calculator(percentage, length_of_experiment)
+        print(f"Return: ${return_15:.2f}, Multiplier: {multiplier_15:.2f}")
+        print("\n")
+
 # Run the experiment
 run_experiment()
+print_compound_interest_comparisons()
+## Can use this to quickly get an idea for the avg interest rate
+
 
 with open(fn_cached_returns, 'wb') as fi:
     pickle.dump(cached_returns, fi)
