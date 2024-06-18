@@ -3,12 +3,15 @@ import pickle
 
 import statmuse
 
-fn_cached_returns = 'cached_returns.pk'
+fn_cached_returns = '__pycache__/cached_returns.pk'
 try:
     with open(fn_cached_returns, 'rb') as fi:
         cached_returns = pickle.load(fi)
 except:
     cached_returns = {}
+
+## Experiment configuration
+length_of_experiment = 29 # Number of years to run the experiment for -1
 
 ### STRATEGY: INVEST IN THE TOP N STOCKS OF THE PREVIOUS YEAR ###
 # For year X buy the top N stocks from year X-1, investing $1000 in each stock
@@ -106,7 +109,7 @@ def baseline_test(ticker, starty, endy):
     return portfolio_value - total_invested, portfolio_value / total_invested
 
 def run_experiment():
-    periods = [(start, start + 19) for start in range(1962, 2024 - 19)]
+    periods = [(start, start + length_of_experiment) for start in range(1962, 2024 - length_of_experiment)]
     results = []
 
     for starty, endy in periods:
