@@ -125,6 +125,7 @@ def get_stock_performance(stock_symbol, year):
     return performance_percentage
 
 def main():
+    # TODO: We could turn this into a proper CLI tool
     print("Choose an option:")
     print("1. Get top N performers of the S&P 500")
     print("2. Get stock performance for a specific year")
