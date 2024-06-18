@@ -171,7 +171,7 @@ def print_compound_interest_comparisons():
 
 # Run the experiment
 run_experiment()
-print_compound_interest_comparisons()
+# print_compound_interest_comparisons()
 ## Can use this to quickly get an idea for the avg interest rate
 
 
