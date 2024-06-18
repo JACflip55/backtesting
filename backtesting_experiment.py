@@ -12,6 +12,7 @@ except:
 
 ## Experiment configuration
 length_of_experiment = 29 # Number of years to run the experiment for -1
+annual_investment_total = 20000 # Total amount to invest each year
 
 ### STRATEGY: INVEST IN THE TOP N STOCKS OF THE PREVIOUS YEAR ###
 # For year X buy the top N stocks from year X-1, investing $1000 in each stock
@@ -26,10 +27,10 @@ def calculate_strategy_return(starty, endy, n, verbose=False):
         for stock in top_n_stocks:
             # Invest $1000 in each stock
             if stock not in stock_holdings:
-                stock_holdings[stock] = 1000
+                stock_holdings[stock] = (annual_investment_total / n)
             else:
-                stock_holdings[stock] += 1000
-            total_invested += 1000
+                stock_holdings[stock] += (annual_investment_total / n)
+        total_invested += annual_investment_total
         stock_holdings = update_portfolio(stock_holdings, year)
         portfolio_value = sum(stock_holdings.values())
 
@@ -53,8 +54,9 @@ def print_summary(sorted_holdings, total_invested, portfolio_value):
     print(f"Total return: ${portfolio_value - total_invested:.2f}")
     print(f"Final portfolio return multiplier: {portfolio_value / total_invested:.2f}")
 
-def update_portfolio(portfolio, calendar_year):
-    print(f"{calendar_year} Starting portfolio: {portfolio}...")
+def update_portfolio(portfolio, calendar_year, verbose=False):
+    if verbose:
+        print(f"{calendar_year} Starting portfolio: {portfolio}...")
     new_portfolio = portfolio.copy()
     if calendar_year not in cached_returns:
         cached_returns[calendar_year] = {}
@@ -87,7 +89,8 @@ def update_portfolio(portfolio, calendar_year):
                 cached_returns[calendar_year][stock] = price_multiplier
         except Exception as e:
             print(f"Error calculating value for {stock} in {calendar_year}: {e}")
-    print(f"{calendar_year} Ending portfolio: {new_portfolio}")
+    if verbose:
+        print(f"{calendar_year} Ending portfolio: {new_portfolio}")
     return new_portfolio
 
 def baseline_test(ticker, starty, endy):
@@ -95,10 +98,10 @@ def baseline_test(ticker, starty, endy):
     total_invested = 0
     for year in range(starty, endy + 1):
         if ticker not in stock_holdings:
-            stock_holdings[ticker] = 1000
+            stock_holdings[ticker] = annual_investment_total
         else:
-            stock_holdings[ticker] += 1000
-        total_invested += 1000
+            stock_holdings[ticker] += annual_investment_total
+        total_invested += annual_investment_total
         print(f"Total portfolio value at the beginning of {year}: ${sum(stock_holdings.values()):.2f}")
         stock_holdings = update_portfolio(stock_holdings, year)
         portfolio_value = sum(stock_holdings.values())
