@@ -3,7 +3,7 @@ import pickle
 
 import statmuse
 
-fn_cached_returns = 'cached_returns.pk'
+fn_cached_returns = '__pycache__/cached_returns.pk'
 try:
     with open(fn_cached_returns, 'rb') as fi:
         cached_returns = pickle.load(fi)
