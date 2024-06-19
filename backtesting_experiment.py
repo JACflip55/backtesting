@@ -10,14 +10,11 @@ try:
 except:
     cached_returns = {}
 
-## Experiment configuration
-length_of_experiment = 20 # Number of years to run the experiment for
 annual_investment_total = 20000 # Total amount to invest each year
-earliest_year_in_data = 1962 # Cannot get earlier data from statmuse. We can from yfinance though
 
 ### STRATEGY: INVEST IN THE TOP N STOCKS OF THE PREVIOUS YEAR ###
 # For year X buy the top N stocks from year X-1, investing $1000 in each stock
-# Calculate the total value of the portfolio at the end of that year
+# Then, calculate the total value of the portfolio at the end of that year
 
 def calculate_strategy_return(starty, endy, n, verbose=False):
     stock_holdings = {}
@@ -44,6 +41,10 @@ def calculate_strategy_return(starty, endy, n, verbose=False):
 def get_top_n_stocks_prev_year(year, n):
     top_n_stocks = statmuse.get_top_n_tickers(year - 1, n)
     return top_n_stocks
+
+def get_bottom_n_stocks_prev_year(year, n):
+    bottom_n_stocks = statmuse.get_bottom_n_tickers(year - 1, n)
+    return bottom_n_stocks
 
 def print_summary(sorted_holdings, total_invested, portfolio_value):
     print("\n\n\n")
@@ -132,32 +133,62 @@ def compound_interest_calculator(percentage, num_years, verbose=False):
     return portfolio_value - total_invested, portfolio_value / total_invested
 
 def run_experiment():
+
+    ## Experiment configuration
+    length_of_experiment = 20 # Number of years to run the experiment for
+    earliest_year_in_data = 1962 # Cannot get earlier data from statmuse
+    portfolio_compositions = [10, 15, 20, 25] # Cannot get more than 25 from statmuse
+    portfolio_results = {n: [] for n in portfolio_compositions}
+    best_portfolio_counts = {n: 0 for n in portfolio_compositions}
+    baseline_results = []
+
     periods = [(start, start + length_of_experiment - 1) for start in range(earliest_year_in_data, 2025 - length_of_experiment)]
     results = []
 
     for starty, endy in periods:
         print(f"Running experiment for {starty}-{endy}...")
-        return_15, multiplier_15 = calculate_strategy_return(starty, endy, 15)
-        return_20, multiplier_20 = calculate_strategy_return(starty, endy, 20)
-        return_25, multiplier_25 = calculate_strategy_return(starty, endy, 25)
+        period_results = []
+
+        for n in portfolio_compositions:
+            return_n, multiplier_n = calculate_strategy_return(starty, endy, n)
+            portfolio_results[n].append(multiplier_n)
+            period_results.append((return_n, multiplier_n, f'Top {n} stocks'))
+
         baseline_return, baseline_multiplier = baseline_test("^GSPC", starty, endy)
-        results.append((starty, endy, return_15, multiplier_15, return_20, multiplier_20, return_25, multiplier_25, baseline_return, baseline_multiplier))
+        baseline_results.append(baseline_multiplier)
+        period_results.append((baseline_return, baseline_multiplier, 'S&P 500 baseline'))
 
-    print_experiment_results(results)
+        best_portfolio = max(period_results, key=lambda x: x[1])
+        if 'Top' in best_portfolio[2]:
+            best_n = int(best_portfolio[2].split()[1])
+            best_portfolio_counts[best_n] += 1
 
-def print_experiment_results(results):
+        results.append((starty, endy, period_results))
+
+    print_experiment_results(results, portfolio_compositions, portfolio_results, best_portfolio_counts, baseline_results)
+
+def print_experiment_results(results, portfolio_compositions, portfolio_results, best_portfolio_counts, baseline_results):
     print("\n\n\n")
     print("Experiment Results:\n")
+
     for result in results:
-        starty, endy, return_15, multiplier_15, return_20, multiplier_20, return_25, multiplier_25, baseline_return, baseline_multiplier = result
+        starty, endy, period_results = result
         print(f"Period: {starty}-{endy}")
-        print(f"Top 15 stocks return: ${return_15:.2f}, Multiplier: {multiplier_15:.2f}")
-        print(f"Top 20 stocks return: ${return_20:.2f}, Multiplier: {multiplier_20:.2f}")
-        print(f"Top 25 stocks return: ${return_25:.2f}, Multiplier: {multiplier_25:.2f}")
-        print(f"S&P 500 baseline return: ${baseline_return:.2f}, Multiplier: {baseline_multiplier:.2f}")
-        best_portfolio = max([(multiplier_15, 'Top 15 stocks'), (multiplier_20, 'Top 20 stocks'), (multiplier_25, 'Top 25 stocks'), (baseline_multiplier, 'S&P 500 baseline')], key=lambda x: x[0])
-        print(f"Best performing portfolio: {best_portfolio[1]} with percentage increase of: %${best_portfolio[0]*100:.2f}")
+        for return_val, multiplier, description in period_results:
+            print(f"{description} return: ${return_val:.2f}, Multiplier: {multiplier:.2f}")
+        best_portfolio = max(period_results, key=lambda x: x[1])
+        print(f"Best performing portfolio: {best_portfolio[2]} with return: ${best_portfolio[0]:.2f}")
         print("\n")
+
+    print("\n\nSummary:\n")
+    for n in portfolio_compositions:
+        avg_multiplier = sum(portfolio_results[n]) / len(portfolio_results[n])
+        print(f"Top {n} stocks average multiplier: {avg_multiplier:.2f}")
+        print(f"Top {n} stocks were the best performer in {best_portfolio_counts[n]} periods")
+
+    avg_baseline_multiplier = sum(baseline_results) / len(baseline_results)
+    print(f"S&P 500 baseline average multiplier: {avg_baseline_multiplier:.2f}")
+    print(f"S&P 500 baseline was the best performer in {len(results) - sum(best_portfolio_counts.values())} periods")
 
 def print_compound_interest_comparisons():
     print("\n\n\n")

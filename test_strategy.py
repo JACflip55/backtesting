@@ -14,19 +14,21 @@ except:
 # For year X buy the top 20 stocks from year X-1 Investing $1000 in each stock
 # Calculate the total value of the portfolio at the end of that year
 
-def calculate_strategy_return(starty, endy, verbose=False):
+# For the first 10 years we could only invest 500 in each stock and for the next 10 years we could invest 1000 in each stock. This is more realistic as we would have more money to invest as time goes on.
+
+def calculate_strategy_return(starty, endy, verbose=False, n=20, amount_to_invest=1000):
     stock_holdings = {}
     total_invested = 0
     for year in range(starty, endy+1):
         # Get the top 20 stocks from the previous year
-        top_20_stocks = get_top_20_stocks_prev_year(year)
+        top_20_stocks = get_top_stocks_prev_year(year, n)
         for stock in top_20_stocks:
             # Invest $1000 in each stock
             if stock not in stock_holdings:
-                stock_holdings[stock] = 1000
+                stock_holdings[stock] = amount_to_invest
             else:
-                stock_holdings[stock] += 1000
-            total_invested += 1000
+                stock_holdings[stock] += amount_to_invest
+            total_invested += amount_to_invest
         # print(f"Total portfolio value at the beginning of {year}: ${sum(stock_holdings.values()):.2f}")
         stock_holdings = update_portfolio(stock_holdings, year)
         portfolio_value = sum(stock_holdings.values())
@@ -39,9 +41,9 @@ def calculate_strategy_return(starty, endy, verbose=False):
     return (total_return, sorted_holdings)
 
 # This might not be right, but if we trust the data at the top of the file
-def get_top_20_stocks_prev_year(year):
-    top_20_stocks = statmuse.get_top_n_tickers(year - 1, 20)
-    return top_20_stocks
+def get_top_stocks_prev_year(year, n):
+    top_stocks = statmuse.get_top_n_tickers(year - 1, n)
+    return top_stocks
 
 def print_summary(sorted_holdings, total_invested, portfolio_value):
     # Print the final summary
@@ -116,12 +118,12 @@ def baseline_test(ticker, starty, endy):
     print(f"Final portfolio return multiplier: {portfolio_value / total_invested:.2f}")
     return stock_holdings
 
-calculate_strategy_return(1961, 1980, verbose=True)
-baseline_test("^GSPC", 1961, 1980)
-calculate_strategy_return(1981, 2000, verbose=True)
-baseline_test("^GSPC", 1981, 2000)
+# calculate_strategy_return(1961, 1980, verbose=True)
+# baseline_test("^GSPC", 1961, 1980)
+# calculate_strategy_return(1981, 2000, verbose=True)
+# baseline_test("^GSPC", 1981, 2000)
 calculate_strategy_return(2001, 2020, verbose=True)
-baseline_test("^GSPC", 2001, 2020)
+# baseline_test("^GSPC", 2001, 2020)
 
 
 with open(fn_cached_returns, 'wb') as fi:

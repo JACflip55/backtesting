@@ -80,6 +80,66 @@ def get_top_n_tickers(year, n):
     top_performers = get_top_n_performers(year, n)
     return [performer[0].split('(')[-1].strip(')') for performer in top_performers]
 
+def get_bottom_n_performers(year, n):
+    # Check if we have cached data
+    cached_data = load_cache(year)
+    if cached_data:
+        print(f"Using cached data for year {year}")
+        data = cached_data
+    else:
+        # URL of the StatMuse page for S&P 500 top performers
+        url = f"https://www.statmuse.com/money/ask/worst-performing-stocks-in-the-s-and-p-500-in-the-year-{year}"
+
+        # Fetch the page content
+        response = requests.get(url)
+        if response.status_code != 200:
+            print(f"Failed to fetch data from {url}")
+            return []
+
+        # Parse the HTML content
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Find the table body
+        tbody = soup.find('tbody', class_='divide-y divide-[#c7c8ca] leading-[22px]')
+        if not tbody:
+            print("Table body not found in the HTML content")
+            return []
+
+        # Extract the rows
+        rows = tbody.find_all('tr')
+
+        # Extract and store data
+        data = []
+        for row in rows:
+            columns = row.find_all('td')
+            if len(columns) < 3:
+                continue
+            name = columns[0].get_text(strip=True)
+            year_fetched = columns[1].get_text(strip=True)
+            percentage = columns[2].get_text(strip=True).replace('%', '')
+
+            try:
+                percentage_float = float(percentage)
+                data.append([name, year_fetched, percentage_float])
+            except ValueError:
+                print(f"Could not convert percentage value: {percentage}")
+                continue
+
+        # Sort data by percentage (descending)
+        data.sort(key=lambda x: x[2], reverse=True)
+
+        # Save the fetched data to cache
+        save_cache(data, year)
+
+    # Get the top N performers
+    top_n = data[:n]
+    return top_n
+
+
+def get_bottom_n_tickers(year, n):
+    bottom_performers = get_bottom_n_performers(year, n)
+    return [performer[0].split('(')[-1].strip(')') for performer in bottom_performers]
+
 def get_stock_performance(stock_symbol, year):
     # Check if we have cached data
     cached_data = load_cache(year, stock_symbol)
