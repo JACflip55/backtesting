@@ -123,7 +123,8 @@ def baseline_test(ticker, starty, endy):
 # calculate_strategy_return(1981, 2000, verbose=True)
 # baseline_test("^GSPC", 1981, 2000)
 calculate_strategy_return(2001, 2020, verbose=True)
-# baseline_test("^GSPC", 2001, 2020)
+baseline_test("BRK-A", 2001, 2020)
+#baseline_test("^GSPC", 2001, 2020)
 
 
 with open(fn_cached_returns, 'wb') as fi:
