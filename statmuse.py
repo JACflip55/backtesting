@@ -82,7 +82,7 @@ def get_top_n_tickers(year, n):
 
 def get_bottom_n_performers(year, n):
     # Check if we have cached data
-    cached_data = load_cache(year)
+    cached_data = load_cache(str(year)+"w")
     if cached_data:
         print(f"Using cached data for year {year}")
         data = cached_data
@@ -129,7 +129,7 @@ def get_bottom_n_performers(year, n):
         data.sort(key=lambda x: x[2], reverse=True)
 
         # Save the fetched data to cache
-        save_cache(data, year)
+        save_cache(data, str(year)+"w")
 
     # Get the top N performers
     top_n = data[:n]
@@ -188,17 +188,24 @@ def main():
     # TODO: We could turn this into a proper CLI tool
     print("Choose an option:")
     print("1. Get top N performers of the S&P 500")
-    print("2. Get stock performance for a specific year")
+    print("2. Get bottom N performers of the S&P 500")
+    print("3. Get stock performance for a specific year")
     choice = int(input("Enter your choice: "))
 
-    if choice == 1:
+    if choice <= 2:
         year = int(input("Enter the calendar year: "))
-        top_n = int(input("Enter the number of top performing stocks to return: "))
-        top_performers = get_top_n_performers(year, top_n)
-        print(f"Top {top_n} performing stocks in S&P 500 for the year {year}:")
-        for performer in top_performers:
-            print(f"{performer[0]}: {performer[2]:.2f}% in {performer[1]}")
-    elif choice == 2:
+        n = int(input("Enter the number of stocks to return: "))
+        if choice == 1:
+            top_performers = get_top_n_performers(year, n)
+            print(f"Top {n} performing stocks in S&P 500 for the year {year}:")
+            for performer in top_performers:
+                print(f"{performer[0]}: {performer[2]:.2f}% in {performer[1]}")
+        else:
+            bottom_performers = get_bottom_n_performers(year, n)
+            print(f"Bottom {n} performing stocks in S&P 500 for the year {year}:")
+            for performer in bottom_performers:
+                print(f"{performer[0]}: {performer[2]:.2f}% in {performer[1]}")
+    elif choice == 3:
         stock_symbol = input("Enter the stock symbol: ").lower()
         year = int(input("Enter the calendar year: "))
         performance = get_stock_performance(stock_symbol, year)
