@@ -100,7 +100,7 @@ def get_bottom_n_performers(year, n):
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # Find the table body
-        tbody = soup.find('tbody', class_='divide-y divide-[#c7c8ca] leading-[22px]')
+        tbody = soup.find('tbody', class_='divide-y divide-gray-6 dark:divide-gray-4 leading-[22px]')
         if not tbody:
             print("Table body not found in the HTML content")
             return []
