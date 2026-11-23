@@ -1,9 +1,18 @@
+import os
+import pickle
+import re
+
 import requests
 from bs4 import BeautifulSoup
-import pickle
-import os
 
 CACHE_DIR = '__pycache__'
+
+# Shown in place of the results table once a visitor who is not signed in has used up their free lookups.
+SIGN_IN_WALL = 'Keep musing with a free StatMuse account'
+
+
+class StatMuseLimitReached(RuntimeError):
+    """StatMuse answered but withheld the results table until the visitor signs in."""
 
 def save_cache(data, year, stock_symbol=None):
     if not os.path.exists(CACHE_DIR):
@@ -21,120 +30,83 @@ def load_cache(year, stock_symbol=None):
             return pickle.load(cache_file)
     return None
 
-def get_top_n_performers(year, n):
-    # Check if we have cached data
-    cached_data = load_cache(year)
-    if cached_data:
-        print(f"Using cached data for year {year}")
-        data = cached_data
-    else:
-        # URL of the StatMuse page for S&P 500 top performers
-        url = f"https://www.statmuse.com/money/ask/best-performing-stocks-in-the-s-and-p-500-in-the-year-{year}"
+def parse_ranking_table(page_html):
+    """Return [[name, year, percent_return], ...] from a StatMuse ranking page.
 
-        # Fetch the page content
-        response = requests.get(url)
-        if response.status_code != 200:
-            print(f"Failed to fetch data from {url}")
-            return []
-
-        # Parse the HTML content
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Find the table body
-        tbody = soup.find('tbody', class_='divide-y divide-[#c7c8ca] leading-[22px]')
-        if not tbody:
-            print("Table body not found in the HTML content")
-            return []
-
-        # Extract the rows
-        rows = tbody.find_all('tr')
-
-        # Extract and store data
+    The table is found by its structure (the first table body whose rows have at
+    least three cells) rather than by CSS class, because the site's class names change.
+    """
+    soup = BeautifulSoup(page_html, 'html.parser')
+    for tbody in soup.find_all('tbody'):
         data = []
-        for row in rows:
+        for row in tbody.find_all('tr'):
             columns = row.find_all('td')
             if len(columns) < 3:
                 continue
             name = columns[0].get_text(strip=True)
             year_fetched = columns[1].get_text(strip=True)
-            percentage = columns[2].get_text(strip=True).replace('%', '')
-
+            percentage = columns[2].get_text(strip=True).replace('%', '').replace(',', '')
             try:
-                percentage_float = float(percentage)
-                data.append([name, year_fetched, percentage_float])
+                data.append([name, year_fetched, float(percentage)])
             except ValueError:
                 print(f"Could not convert percentage value: {percentage}")
-                continue
+        if data:
+            return data
+    return []
 
-        # Sort data by percentage (descending)
-        data.sort(key=lambda x: x[2], reverse=True)
 
-        # Save the fetched data to cache
-        save_cache(data, year)
+def parse_stock_performance(page_html):
+    """Return the percent return from a StatMuse single-stock answer page, or None."""
+    soup = BeautifulSoup(page_html, 'html.parser')
+    for h1 in soup.find_all('h1'):
+        match = re.search(r'return(?:ed|ing)\s+(-?[\d,]+(?:\.\d+)?)\s*%', h1.get_text(' ', strip=True))
+        if match:
+            return float(match.group(1).replace(',', ''))
+    return None
 
-    # Get the top N performers
-    top_n = data[:n]
-    return top_n
+
+def fetch_ranking(kind, year):
+    """Fetch the 'best' or 'worst' performing S&P 500 stocks of a year (StatMuse lists 25)."""
+    url = f"https://www.statmuse.com/money/ask/{kind}-performing-stocks-in-the-s-and-p-500-in-the-year-{year}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print(f"Failed to fetch data from {url}")
+        return []
+    data = parse_ranking_table(response.text)
+    if not data and SIGN_IN_WALL in response.text:
+        raise StatMuseLimitReached(
+            f"StatMuse withheld the ranking table for {year}: it only shows a few tables to visitors who "
+            "are not signed in, then asks them to create an account. Years already in the cache still work.")
+    if not data:
+        print(f"Ranking table not found at {url}")
+    return data
+
+
+def get_top_n_performers(year, n):
+    data = load_cache(year)
+    if data:
+        print(f"Using cached data for year {year}")
+    else:
+        data = fetch_ranking('best', year)
+        if data:
+            save_cache(data, year)
+    # Best first
+    return sorted(data, key=lambda x: x[2], reverse=True)[:n]
 
 def get_top_n_tickers(year, n):
     top_performers = get_top_n_performers(year, n)
     return [performer[0].split('(')[-1].strip(')') for performer in top_performers]
 
 def get_bottom_n_performers(year, n):
-    # Check if we have cached data
-    cached_data = load_cache(str(year)+"w")
-    if cached_data:
+    data = load_cache(str(year)+"w")
+    if data:
         print(f"Using cached data for year {year}")
-        data = cached_data
     else:
-        # URL of the StatMuse page for S&P 500 top performers
-        url = f"https://www.statmuse.com/money/ask/worst-performing-stocks-in-the-s-and-p-500-in-the-year-{year}"
-
-        # Fetch the page content
-        response = requests.get(url)
-        if response.status_code != 200:
-            print(f"Failed to fetch data from {url}")
-            return []
-
-        # Parse the HTML content
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Find the table body
-        tbody = soup.find('tbody', class_='divide-y divide-gray-6 dark:divide-gray-4 leading-[22px]')
-        if not tbody:
-            print("Table body not found in the HTML content")
-            return []
-
-        # Extract the rows
-        rows = tbody.find_all('tr')
-
-        # Extract and store data
-        data = []
-        for row in rows:
-            columns = row.find_all('td')
-            if len(columns) < 3:
-                continue
-            name = columns[0].get_text(strip=True)
-            year_fetched = columns[1].get_text(strip=True)
-            percentage = columns[2].get_text(strip=True).replace('%', '')
-
-            try:
-                percentage_float = float(percentage)
-                data.append([name, year_fetched, percentage_float])
-            except ValueError:
-                print(f"Could not convert percentage value: {percentage}")
-                continue
-
-        # Sort data by percentage (descending)
-        data.sort(key=lambda x: x[2], reverse=True)
-
-        # Save the fetched data to cache
-        save_cache(data, str(year)+"w")
-
-    # Get the top N performers
-    top_n = data[:n]
-    return top_n
-
+        data = fetch_ranking('worst', year)
+        if data:
+            save_cache(data, str(year)+"w")
+    # Worst first, so the first n really are the n worst performers
+    return sorted(data, key=lambda x: x[2])[:n]
 
 def get_bottom_n_tickers(year, n):
     bottom_performers = get_bottom_n_performers(year, n)
@@ -156,27 +128,9 @@ def get_stock_performance(stock_symbol, year):
         print(f"Failed to fetch data from {url}")
         return None
 
-    # Parse the HTML content
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Find the performance element
-    h1_tag = soup.find('h1', class_='font-semibold text-xl md:text-2xl md:leading-snug lg:text-[1.75rem] xl:text-3xl xl:leading-snug my-auto')
-    if not h1_tag:
-        print("Performance data not found in the HTML content")
-        return None
-
-    p_tag = h1_tag.find('p', class_='my-[1em] [&>a]:underline [&>a]:text-team-secondary')
-    if not p_tag:
-        print("Performance data not found in the paragraph")
-        return None
-
-    performance_text = p_tag.get_text(strip=True)
-    percentage_str = performance_text.split('returned')[-1].split('%')[0].strip()
-
-    try:
-        performance_percentage = float(percentage_str)
-    except ValueError:
-        print(f"Could not convert performance value: {percentage_str}")
+    performance_percentage = parse_stock_performance(response.text)
+    if performance_percentage is None:
+        print(f"Performance data not found at {url}")
         return None
 
     # Save the fetched data to cache

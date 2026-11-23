@@ -3,7 +3,12 @@ Backtesting Investment Strategies
 
 ## Directions
 
-To run the experiment first ensure all packages are installed (beautifulsoup4, yfinance), then run `python backtesting_experiment.py`
+Install the dependencies, then run the experiment:
+
+```
+pip install -r requirements.txt
+python run_experiment.py
+```
 
 The first run will be slow because it has to pull data from statmuse and yfinance.
 
@@ -11,7 +16,21 @@ Subsequent runs will be much faster due to data in the cache.
 
 In order to see the detailed breakdown of a specific portfolio for a specific period you can run `python test_strategy.py`
 
-You can also run the statmuse file to explore the data a little bit.
+You can also run the statmuse file to explore the data a little bit, or `streamlit run app.py` for a small web UI.
+
+The strategy maths has unit tests that need no network access:
+
+```
+python -m unittest discover -s tests
+```
+
+## Data source limit
+
+StatMuse shows the yearly ranking table to visitors who are not signed in only a few times, then
+replaces it with a prompt to create an account. When that happens `statmuse.py` stops with a
+`StatMuseLimitReached` error instead of carrying on with no stocks. Years already in the local cache
+are not affected, so a full experiment over several decades needs the cache to be built up over
+several sessions, or a different data source.
 
 ## Future Work
 
