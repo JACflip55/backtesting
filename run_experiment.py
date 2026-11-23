@@ -54,9 +54,9 @@ def print_experiment_results(results, portfolio_compositions, portfolio_results,
         starty, endy, period_results = result
         print(f"Period: {starty}-{endy}")
         for apr, return_val, multiplier, description in period_results:
-            print(f"{description} return: ${return_val:.2f}, Multiplier: {multiplier:.2f}, APR: %{100 * apr:.2f}")
+            print(f"{description} return: ${return_val:.2f}, Multiplier: {multiplier:.2f}, Avg annual return: {100 * apr:.2f}%")
         best_portfolio = max(period_results, key=lambda x: x[1])
-        print(f"Best performing portfolio: {best_portfolio[3]} with return: %{100 * best_portfolio[0]:.2f}")
+        print(f"Best performing portfolio: {best_portfolio[3]} with return: {100 * best_portfolio[0]:.2f}%")
         print("\n")
 
     print("\n\nSummary:\n")
@@ -66,30 +66,31 @@ def print_experiment_results(results, portfolio_compositions, portfolio_results,
         print(f"Top {n} stocks average multiplier: {avg_multiplier_top:.2f}")
         print(f"Top {n} stocks were the best performer in {best_portfolio_counts[n]} periods")
         avg_apr_top = sum(portfolio_percent_return_results[n]['top']) / len(portfolio_percent_return_results[n]['top'])
-        print(f"Top {n} stocks average APR: %{100 * avg_apr_top:.2f}")
+        print(f"Top {n} stocks average annual return: {100 * avg_apr_top:.2f}%")
 
         print(f"Bottom {n} stocks average multiplier: {avg_multiplier_bottom:.2f}")
         print(f"Bottom {n} stocks were the best performer in {worst_portfolio_counts[n]} periods")
         avg_apr_bottom = sum(portfolio_percent_return_results[n]['bottom']) / len(portfolio_percent_return_results[n]['bottom'])
-        print(f"Bottom {n} stocks average APR: %{100 * avg_apr_bottom:.2f}")
+        print(f"Bottom {n} stocks average annual return: {100 * avg_apr_bottom:.2f}%")
 
     avg_baseline_multiplier = sum(baseline_results) / len(baseline_results)
     print(f"S&P 500 baseline average multiplier: {avg_baseline_multiplier:.2f}")
     print(f"S&P 500 baseline was the best performer in {len(results) - sum(best_portfolio_counts.values()) - sum(worst_portfolio_counts.values())} periods")
-    print(f"S&P 500 baseline average APR: %{100 * baseline_apr:.2f}")
+    print(f"S&P 500 baseline average annual return: {100 * baseline_apr:.2f}%")
 
 
 def print_compound_interest_comparisons():
     print("\n\n\n")
-    print("Compound Interest Comparisons for {length_of_experiment} years:\n")
+    print(f"Compound Interest Comparisons for {length_of_experiment} years:\n")
     for i in range(12, 50):
         percentage = 0.005 * i  # increment by 1/2 percent
         print(f"Compound interest at {percentage*100:.2f}% per year:")
-        return_15, multiplier_15 = compound_interest_calculator(percentage, length_of_experiment)
+        return_15, multiplier_15 = backtesting.compound_interest_calculator(percentage, length_of_experiment)
         print(f"Return: ${return_15:.2f}, Multiplier: {multiplier_15:.2f}")
         print("\n")
 
-# Run the experiment
-run_experiment()
-# print_compound_interest_comparisons()
-## Can use this to quickly get an idea for the avg interest rate
+if __name__ == '__main__':
+    run_experiment()
+    backtesting.save_cached_returns()
+    # print_compound_interest_comparisons()
+    ## Can use this to quickly get an idea for the avg interest rate
