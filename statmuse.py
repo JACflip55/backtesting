@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 import re
@@ -5,7 +6,9 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-CACHE_DIR = '__pycache__'
+HERE = os.path.dirname(os.path.abspath(__file__))
+CACHE_DIR = os.path.join(HERE, 'cache', 'statmuse')   # committed, one JSON file per lookup
+LEGACY_CACHE_DIR = os.path.join(HERE, '__pycache__')  # where older versions kept pickles
 
 # Shown in place of the results table once a visitor who is not signed in has used up their free lookups.
 SIGN_IN_WALL = 'Keep musing with a free StatMuse account'
@@ -15,19 +18,25 @@ class StatMuseLimitReached(RuntimeError):
     """StatMuse answered but withheld the results table until the visitor signs in."""
 
 def save_cache(data, year, stock_symbol=None):
-    if not os.path.exists(CACHE_DIR):
-        os.makedirs(CACHE_DIR)
-    filename = f'{stock_symbol}_{year}.pkl' if stock_symbol else f'{year}.pkl'
-    cache_path = os.path.join(CACHE_DIR, filename)
-    with open(cache_path, 'wb') as cache_file:
-        pickle.dump(data, cache_file)
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    name = f'{stock_symbol}_{year}' if stock_symbol else f'{year}'
+    with open(os.path.join(CACHE_DIR, name + '.json'), 'w') as cache_file:
+        json.dump(data, cache_file, indent=1)
+        cache_file.write('\n')
 
 def load_cache(year, stock_symbol=None):
-    filename = f'{stock_symbol}_{year}.pkl' if stock_symbol else f'{year}.pkl'
-    cache_path = os.path.join(CACHE_DIR, filename)
+    name = f'{stock_symbol}_{year}' if stock_symbol else f'{year}'
+    cache_path = os.path.join(CACHE_DIR, name + '.json')
     if os.path.exists(cache_path):
-        with open(cache_path, 'rb') as cache_file:
-            return pickle.load(cache_file)
+        with open(cache_path) as cache_file:
+            return json.load(cache_file)
+    # An existing cache from an older version: read it once and keep it in the new location
+    legacy_path = os.path.join(LEGACY_CACHE_DIR, name + '.pkl')
+    if os.path.exists(legacy_path):
+        with open(legacy_path, 'rb') as cache_file:
+            data = pickle.load(cache_file)
+        save_cache(data, year, stock_symbol)
+        return data
     return None
 
 def parse_ranking_table(page_html):
