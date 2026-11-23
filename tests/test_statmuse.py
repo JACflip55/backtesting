@@ -38,6 +38,31 @@ class ParsingTest(unittest.TestCase):
         self.assertIsNone(statmuse.parse_stock_performance("<h1>No answer</h1>"))
 
 
+class SignInWallTest(unittest.TestCase):
+    WALL_PAGE = "<html><body><h1><p>Carvana (CVNA) had the best year in 2019, returning 190.6%.</p></h1>" \
+                "<div>Keep musing with a free StatMuse account</div></body></html>"
+
+    def fetch(self, page):
+        response = mock.Mock(status_code=200, text=page)
+        with mock.patch.object(statmuse.requests, "get", return_value=response), \
+                mock.patch.object(statmuse, "load_cache", return_value=None), \
+                mock.patch.object(statmuse, "save_cache") as save:
+            try:
+                return statmuse.get_top_n_tickers(2019, 5), save
+            except statmuse.StatMuseLimitReached:
+                return "limit", save
+
+    def test_withheld_table_raises_instead_of_returning_no_stocks(self):
+        result, save = self.fetch(self.WALL_PAGE)
+        self.assertEqual(result, "limit")
+        save.assert_not_called()
+
+    def test_normal_page_is_parsed_and_cached(self):
+        result, save = self.fetch(RANKING_PAGE)
+        self.assertEqual(result, ["BIG", "TSLA", "MRNA", "CCL"])
+        save.assert_called_once()
+
+
 class SelectionTest(unittest.TestCase):
     def setUp(self):
         for patcher in (

@@ -7,6 +7,13 @@ from bs4 import BeautifulSoup
 
 CACHE_DIR = '__pycache__'
 
+# Shown in place of the results table once a visitor who is not signed in has used up their free lookups.
+SIGN_IN_WALL = 'Keep musing with a free StatMuse account'
+
+
+class StatMuseLimitReached(RuntimeError):
+    """StatMuse answered but withheld the results table until the visitor signs in."""
+
 def save_cache(data, year, stock_symbol=None):
     if not os.path.exists(CACHE_DIR):
         os.makedirs(CACHE_DIR)
@@ -66,6 +73,10 @@ def fetch_ranking(kind, year):
         print(f"Failed to fetch data from {url}")
         return []
     data = parse_ranking_table(response.text)
+    if not data and SIGN_IN_WALL in response.text:
+        raise StatMuseLimitReached(
+            f"StatMuse withheld the ranking table for {year}: it only shows a few tables to visitors who "
+            "are not signed in, then asks them to create an account. Years already in the cache still work.")
     if not data:
         print(f"Ranking table not found at {url}")
     return data

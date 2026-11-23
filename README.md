@@ -24,6 +24,14 @@ The strategy maths has unit tests that need no network access:
 python -m unittest discover -s tests
 ```
 
+## Data source limit
+
+StatMuse shows the yearly ranking table to visitors who are not signed in only a few times, then
+replaces it with a prompt to create an account. When that happens `statmuse.py` stops with a
+`StatMuseLimitReached` error instead of carrying on with no stocks. Years already in the local cache
+are not affected, so a full experiment over several decades needs the cache to be built up over
+several sessions, or a different data source.
+
 ## Future Work
 
 Things that it would be interesting to test that should be possible with the data available:
