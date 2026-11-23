@@ -24,12 +24,6 @@ The strategy maths has unit tests that need no network access:
 python -m unittest discover -s tests
 ```
 
-## Known issue
-
-StatMuse now renders its result tables in the browser, so `statmuse.py` can no longer scrape the
-yearly top and bottom performers from the page HTML. Years that are already in the local cache
-still work; years that are not come back empty.
-
 ## Future Work
 
 Things that it would be interesting to test that should be possible with the data available:
