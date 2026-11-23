@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -5,19 +6,40 @@ import yfinance as yf
 
 import statmuse
 
-fn_cached_returns = '__pycache__/cached_returns.pk'
-try:
-    with open(fn_cached_returns, 'rb') as fi:
-        cached_returns = pickle.load(fi)
-except (FileNotFoundError, EOFError, pickle.UnpicklingError):
-    cached_returns = {}
+HERE = os.path.dirname(os.path.abspath(__file__))
+fn_cached_returns = os.path.join(HERE, 'cache', 'cached_returns.json')
+fn_legacy_cached_returns = os.path.join(HERE, '__pycache__', 'cached_returns.pk')  # where older versions kept it
+
+
+def load_cached_returns():
+    """Return {year: {ticker: price multiplier for that year}} from the cache committed in cache/.
+
+    Falls back to the pickle that older versions wrote to __pycache__/, so an existing
+    local cache is picked up and written to the new location on the next save.
+    """
+    try:
+        with open(fn_cached_returns) as fi:
+            return {int(year): returns for year, returns in json.load(fi).items()}
+    except FileNotFoundError:
+        pass
+    try:
+        with open(fn_legacy_cached_returns, 'rb') as fi:
+            return pickle.load(fi)
+    except (FileNotFoundError, EOFError, pickle.UnpicklingError):
+        return {}
 
 
 def save_cached_returns():
     """Write the yearly price multipliers fetched so far back to the cache file."""
     os.makedirs(os.path.dirname(fn_cached_returns), exist_ok=True)
-    with open(fn_cached_returns, 'wb') as fi:
-        pickle.dump(cached_returns, fi)
+    data = {str(year): {ticker: float(m) for ticker, m in sorted(returns.items())}
+            for year, returns in sorted(cached_returns.items())}
+    with open(fn_cached_returns, 'w') as fi:
+        json.dump(data, fi, indent=1)
+        fi.write('\n')
+
+
+cached_returns = load_cached_returns()
 
 annual_investment_total = 20000  # Total amount to invest each year
 
